@@ -404,7 +404,7 @@
               // 屏幕被失效了
               localStorage.removeItem(STORAGE_KEY);
               alert('此屏幕已被失效，请重新访问首页注册');
-              window.location.href = '/static/index.html';
+              window.location.href = '/';
             }
           } else if (event.reason === 'Invalid token') {
             localStorage.removeItem(STORAGE_KEY);
@@ -623,7 +623,7 @@
         connectWebSocket();
       } else {
         // 没有 token 也没有 pending 参数，跳回首页
-        window.location.href = '/static/index.html';
+        window.location.href = '/';
         return;
       }
 

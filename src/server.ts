@@ -13,7 +13,13 @@ const app = new Hono();
 app.use('*', cors({ origin: '*', credentials: true }));
 
 // 静态文件服务
-app.use('/static/*', serveStatic({ root: '.' }));
+app.use('/attachments/*', serveStatic({ root: './static' }));
+
+// 根路径 -> index.html
+app.get('/', serveStatic({ path: './static/index.html' }));
+
+// display.html
+app.get('/display.html', serveStatic({ path: './static/display.html' }));
 
 // ========== AI Agent API 中间件 ==========
 const aiAuthMiddleware = async (c: any, next: any) => {
