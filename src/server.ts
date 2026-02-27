@@ -12,8 +12,7 @@ const app = new Hono();
 // CORS 中间件
 app.use('*', cors({ origin: '*', credentials: true }));
 
-// 静态文件服务
-app.use('/attachments/*', serveStatic({ root: './static' }));
+// 注意：附件通过 /attachments/:id 路由动态处理（带token验证），不使用静态文件服务
 
 // 根路径 -> index.html
 app.get('/', serveStatic({ path: './static/index.html' }));
