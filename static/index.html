@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Screen - 屏幕初始化</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .container {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .logo {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+      font-weight: 300;
+    }
+
+    .subtitle {
+      color: #8892b0;
+      margin-bottom: 40px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #64ffda;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-text {
+      color: #ccd6f6;
+    }
+
+    .screen-id {
+      font-family: 'Courier New', monospace;
+      background: rgba(100, 255, 218, 0.1);
+      color: #64ffda;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .error {
+      color: #ff6b6b;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🖥️</div>
+    <h1>AI Screen</h1>
+    <p class="subtitle">智能屏幕中继服务</p>
+    <div class="status">
+      <div class="spinner"></div>
+      <span class="status-text" id="status">正在初始化...</span>
+    </div>
+    <div id="error" class="error"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'ai_screen_token';
+
+    function generateScreenId() {
+      return 'screen_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    async function init() {
+      const statusEl = document.getElementById('status');
+      const errorEl = document.getElementById('error');
+
+      // 1. 检查是否已有注册 token
+      const existingToken = localStorage.getItem(STORAGE_KEY);
+
+      if (existingToken) {
+        statusEl.textContent = '正在恢复连接...';
+
+        // 尝试验证 token 是否有效
+        try {
+          const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=${existingToken}`;
+          const ws = new WebSocket(wsUrl);
+
+          ws.onopen = () => {
+            // Token 有效，跳转到 display 页面
+            window.location.href = `/static/display.html`;
+          };
+
+          ws.onerror = () => {
+            // Token 可能已失效，清除并重新注册
+            localStorage.removeItem(STORAGE_KEY);
+            registerNewScreen();
+          };
+
+          ws.onclose = (e) => {
+            if (e.code === 1008) {
+              // 被服务端拒绝，token 无效
+              localStorage.removeItem(STORAGE_KEY);
+              registerNewScreen();
+            }
+          };
+
+          // 5 秒超时
+          setTimeout(() => {
+            if (ws.readyState !== WebSocket.OPEN) {
+              ws.close();
+              localStorage.removeItem(STORAGE_KEY);
+              registerNewScreen();
+            }
+          }, 5000);
+
+        } catch (err) {
+          localStorage.removeItem(STORAGE_KEY);
+          registerNewScreen();
+        }
+      } else {
+        // 没有 token，直接注册新屏幕
+        registerNewScreen();
+      }
+    }
+
+    async function registerNewScreen() {
+      const statusEl = document.getElementById('status');
+      const errorEl = document.getElementById('error');
+
+      const screenId = generateScreenId();
+
+      statusEl.innerHTML = `屏幕 ID: <span class="screen-id">${screenId}</span><br>等待 AI Agent 确认注册...`;
+
+      // 生成临时 token（仅用于 WebSocket 连接等待注册）
+      // 实际上服务端会在第一次连接时创建 pending 状态的屏幕记录
+      // 这里我们直接跳转到 display 页面，让它处理 WebSocket 连接
+
+      // 保存 screen_id 到 sessionStorage，供 display 页面使用
+      sessionStorage.setItem('pending_screen_id', screenId);
+
+      // 延迟跳转，让用户看到 ID
+      setTimeout(() => {
+        window.location.href = `/static/display.html?pending=true`;
+      }, 1500);
+    }
+
+    // 启动
+    init();
+  </script>
+</body>
+</html>
