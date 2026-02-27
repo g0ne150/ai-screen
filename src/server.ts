@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/bun';
-import { CONFIG, validateConfig } from './config';
+import { CONFIG, validateConfig, ATTACHMENTS_DIR } from './config';
 import { db, Screen } from './database';
 
 // WebSocket 连接管理
@@ -129,9 +129,9 @@ app.post('/api/attachments', aiAuthMiddleware, async (c) => {
   const attachment = db.createAttachment(id, file.name, file.type, file.size);
 
   // 保存文件
-  const filePath = `${CONFIG.ATTACHMENTS_DIR}/${id}`;
+  const filePath = `${ATTACHMENTS_DIR}/${id}`;
   try {
-    await Bun.mkdir(CONFIG.ATTACHMENTS_DIR, { recursive: true });
+    await Bun.mkdir(ATTACHMENTS_DIR, { recursive: true });
   } catch {
     // 目录可能已存在
   }
@@ -207,7 +207,7 @@ app.get('/attachments/:id', async (c) => {
     return c.text('Unauthorized', 401);
   }
 
-  const filePath = `${CONFIG.ATTACHMENTS_DIR}/${id}`;
+  const filePath = `${ATTACHMENTS_DIR}/${id}`;
   const file = Bun.file(filePath);
 
   if (!(await file.exists())) {

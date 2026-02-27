@@ -10,12 +10,13 @@ export const CONFIG = {
   // WebSocket 心跳间隔 (毫秒)
   WS_HEARTBEAT_INTERVAL: 30000,
 
-  // 附件存储目录 (统一放到 static 下)
-  ATTACHMENTS_DIR: './static/attachments',
 
   // SQLite 数据库路径
   DATABASE_PATH: './data/ai-screen.db',
 };
+
+// 附件存储目录 (约定在 static 下)
+export const ATTACHMENTS_DIR = './static/attachments';
 
 // 验证 AI Token 是否已设置
 export function validateConfig() {
