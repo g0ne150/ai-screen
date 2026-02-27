@@ -57,9 +57,18 @@ curl -X POST \
 
 ### 3. 投影内容
 
+#### 投影模式选择
+
+| 模式 | 适用场景 | 注意事项 |
+|------|----------|----------|
+| `inline_html` | 简单静态内容（文字、图表、天气卡片） | JavaScript 可能受限，复杂动画可能不工作 |
+| `iframe` | 需要 JavaScript 的交互内容（时钟、动态图表、游戏） | 建议上传为附件或使用外部 URL |
+
+**建议**：复杂交互内容一律使用 `iframe` + 附件上传模式。
+
 #### 方式一：Inline HTML
 
-直接向屏幕注入 HTML 内容：
+直接向屏幕注入 HTML 内容（适合静态内容）：
 
 ```bash
 curl -X POST \
@@ -74,7 +83,7 @@ curl -X POST \
 
 #### 方式二：IFrame
 
-在屏幕中嵌入 iframe 加载指定 URL：
+在屏幕中嵌入 iframe 加载指定 URL（适合需要 JavaScript 的内容）：
 
 ```bash
 curl -X POST \
@@ -125,6 +134,19 @@ curl -X POST \
 ```
 
 **附件访问支持 `$screen_token` 占位符**：如果 URL 中需要屏幕的访问 token，使用 `$screen_token` 占位符，屏幕端会自动替换。
+
+示例：发送包含占位符的 HTML，屏幕端自动替换为实际 token
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $AI_SCREEN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "inline_html",
+    "content": "<img src=\"/attachments/xxx?t=$screen_token\">"
+  }' \
+  "$AI_SCREEN_URL/api/screens/{screen_id}/project"
+```
 
 ## 屏幕管理
 
