@@ -54,7 +54,7 @@ app.post('/api/screens/:id/confirm', aiAuthMiddleware, async (c) => {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       type: 'registered',
-      data: { name_en, name_zh }
+      data: { name_en, name_zh, token: screen.token }
     }));
   }
 
