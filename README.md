@@ -38,7 +38,7 @@ bun start      # Production mode
 
 ### 4. Access
 
-- Screen Entry: `http://localhost:3000/static/index.html`
+- Screen Entry: `http://localhost:3000/`
 - AI Agent API: `http://localhost:3000/api/*`
 
 ## API Documentation
@@ -139,7 +139,7 @@ Response:
 
 ## Screen-Side Flow
 
-1. Open `http://localhost:3000/static/index.html`
+1. Open `http://localhost:3000/`
 2. Automatically generate screen_id, redirect to display page and wait for registration
 3. AI Agent queries the pending screen and calls the confirm registration API
 4. Screen receives registration success message and starts receiving projection content

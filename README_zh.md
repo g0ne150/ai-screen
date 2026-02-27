@@ -38,7 +38,7 @@ bun start      # 生产模式
 
 ### 4. 访问
 
-- 屏幕入口：`http://localhost:3000/static/index.html`
+- 屏幕入口：`http://localhost:3000/`
 - AI Agent API: `http://localhost:3000/api/*`
 
 ## API 文档
@@ -139,7 +139,7 @@ file: <binary>
 
 ## 屏幕端流程
 
-1. 打开 `http://localhost:3000/static/index.html`
+1. 打开 `http://localhost:3000/`
 2. 自动生成 screen_id，跳转到 display 页面等待注册
 3. AI Agent 查询到 pending 状态的屏幕，调用确认注册接口
 4. 屏幕收到注册成功消息，开始接收投影内容
