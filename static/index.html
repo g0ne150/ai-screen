@@ -104,56 +104,16 @@
     }
 
     async function init() {
-      const statusEl = document.getElementById('status');
-      const errorEl = document.getElementById('error');
-
-      // 1. 检查是否已有注册 token
+      // 1. 检查是否已有注册 token，有直接跳转 display
       const existingToken = localStorage.getItem(STORAGE_KEY);
 
       if (existingToken) {
-        statusEl.textContent = '正在恢复连接...';
-
-        // 尝试验证 token 是否有效
-        try {
-          const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=${existingToken}`;
-          const ws = new WebSocket(wsUrl);
-
-          ws.onopen = () => {
-            // Token 有效，跳转到 display 页面
-            window.location.href = `/static/display.html`;
-          };
-
-          ws.onerror = () => {
-            // Token 可能已失效，清除并重新注册
-            localStorage.removeItem(STORAGE_KEY);
-            registerNewScreen();
-          };
-
-          ws.onclose = (e) => {
-            if (e.code === 1008) {
-              // 被服务端拒绝，token 无效
-              localStorage.removeItem(STORAGE_KEY);
-              registerNewScreen();
-            }
-          };
-
-          // 5 秒超时
-          setTimeout(() => {
-            if (ws.readyState !== WebSocket.OPEN) {
-              ws.close();
-              localStorage.removeItem(STORAGE_KEY);
-              registerNewScreen();
-            }
-          }, 5000);
-
-        } catch (err) {
-          localStorage.removeItem(STORAGE_KEY);
-          registerNewScreen();
-        }
-      } else {
-        // 没有 token，直接注册新屏幕
-        registerNewScreen();
+        window.location.href = `/static/display.html`;
+        return;
       }
+
+      // 2. 没有 token，生成 screen_id 并跳转到 pending 模式
+      registerNewScreen();
     }
 
     async function registerNewScreen() {

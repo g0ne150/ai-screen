@@ -155,10 +155,49 @@ ai-screen/
 ├── static/
 │   ├── index.html     # 屏幕入口（自动跳转/注册）
 │   └── display.html   # 屏幕显示页面
+├── skill/
+│   └── ai-screen/     # Claude Skill 包
+│       ├── SKILL.md
+│       ├── scripts/
+│       │   ├── list_screens.sh
+│       │   ├── confirm_screen.sh
+│       │   ├── project_html.sh
+│       │   └── upload_and_project.sh
+│       └── references/
+│           └── api.md
 ├── attachments/       # 附件存储目录（自动创建）
 ├── data/              # 数据库目录（自动创建）
 └── package.json
 ```
+
+## AI Agent 使用
+
+本项目包含 `skill/ai-screen/` 目录，是 Claude 的 Skill 包，AI Agent 可通过加载此 Skill 来操作屏幕。
+
+### Skill 使用方式
+
+1. 设置环境变量：
+```bash
+export AI_SCREEN_URL="http://localhost:3000"
+export AI_SCREEN_TOKEN="your-ai-token"
+```
+
+2. Skill 脚本工具：
+```bash
+# 列出所有屏幕
+./skill/ai-screen/scripts/list_screens.sh
+
+# 确认注册新屏幕
+./skill/ai-screen/scripts/confirm_screen.sh <screen_id> <name_en> <name_zh>
+
+# 投影 HTML 文件
+./skill/ai-screen/scripts/project_html.sh <screen_id> <file.html>
+
+# 上传并投影文件
+./skill/ai-screen/scripts/upload_and_project.sh <screen_id> <file.pdf>
+```
+
+详细 API 参考见 `skill/ai-screen/references/api.md`
 
 ## 技术栈
 
