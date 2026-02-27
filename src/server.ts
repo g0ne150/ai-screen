@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/bun';
 import { CONFIG, validateConfig, ATTACHMENTS_DIR } from './config';
-import { db, Screen } from './database';
+import { db } from './database';
 
 // WebSocket 连接管理
 const wsConnections = new Map<string, WebSocket>(); // screen_id -> WebSocket
@@ -262,6 +262,12 @@ const handleWebSocket = {
         screen = db.createScreen(screenId);
       }
 
+      // 关闭已存在的同屏幕连接（防止重复连接）
+      const existingWs = wsConnections.get(screen.id);
+      if (existingWs && existingWs !== ws) {
+        existingWs.close(1008, 'New connection established');
+      }
+
       // 存储连接，但不立即返回成功（等待注册确认）
       (ws as any).screenId = screen.id;
       (ws as any).isPending = true;
@@ -292,6 +298,12 @@ const handleWebSocket = {
       return;
     }
 
+    // 关闭已存在的同屏幕连接（防止重复连接）
+    const existingWs = wsConnections.get(screen.id);
+    if (existingWs && existingWs !== ws) {
+      existingWs.close(1008, 'New connection established');
+    }
+
     // 存储连接
     (ws as any).screenId = screen.id;
     wsConnections.set(screen.id, ws);
@@ -312,8 +324,12 @@ const handleWebSocket = {
   close(ws: WebSocket) {
     const screenId = (ws as any).screenId;
     if (screenId) {
-      wsConnections.delete(screenId);
-      console.log(`Screen ${screenId} disconnected`);
+      // 只删除匹配的连接（防止误删新建立的连接）
+      const currentWs = wsConnections.get(screenId);
+      if (currentWs === ws) {
+        wsConnections.delete(screenId);
+        console.log(`Screen ${screenId} disconnected`);
+      }
     }
   },
 
