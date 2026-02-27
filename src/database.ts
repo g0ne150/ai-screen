@@ -24,13 +24,19 @@ class DatabaseManager {
   private db: Database;
 
   constructor() {
-    // 确保数据目录存在
+    // 确保数据目录存在 - 使用同步方式
     const dataDir = CONFIG.DATABASE_PATH.split('/').slice(0, -1).join('/');
     if (dataDir) {
       try {
-        Bun.mkdir(dataDir, { recursive: true });
-      } catch {
-        // 目录可能已存在
+        // 使用 fs 同步创建目录
+        const fs = require('fs');
+        const path = require('path');
+        const absoluteDir = path.resolve(dataDir);
+        if (!fs.existsSync(absoluteDir)) {
+          fs.mkdirSync(absoluteDir, { recursive: true });
+        }
+      } catch (err) {
+        console.error('Failed to create data directory:', err);
       }
     }
 
