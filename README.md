@@ -1,63 +1,63 @@
-# AI Screen - AI 屏幕中继服务
+# AI Screen - AI Screen Relay Service
 
-面向 AI Agent 的多屏幕中继服务，支持实时内容投影。
+Multi-screen relay service for AI Agents, supporting real-time content projection.
 
-## 架构
+## Architecture
 
 ```
 ┌─────────────┐      HTTP API + AI Token      ┌─────────────┐      WebSocket + Screen Token      ┌─────────────┐
-│   AI Agent  │ ─────────────────────────────>│  中继服务   │<──────────────────────────────────>│    屏幕     │
-│  (Skill/    │                               │   (Bun)     │                                    │  (浏览器)   │
-│   CLI等)    │                               │             │<──────────────────────────────────>│             │
-└─────────────┘                               └─────────────┘         (附件 HTTP 下载)            └─────────────┘
+│   AI Agent  │ ─────────────────────────────>│Relay Service│<──────────────────────────────────>│   Screen    │
+│  (Skill/    │                               │    (Bun)    │                                    │  (Browser)  │
+│   CLI, etc) │                               │             │<──────────────────────────────────>│             │
+└─────────────┘                               └─────────────┘      (Attachment HTTP Download)     └─────────────┘
 ```
 
-## 快速开始
+## Quick Start
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 bun install
 ```
 
-### 2. 配置
+### 2. Configuration
 
-设置环境变量（或保持默认值用于测试）：
+Set environment variables (or keep defaults for testing):
 
 ```bash
 export AI_TOKEN="your-secure-ai-token-here"
 export PORT=3000
 ```
 
-### 3. 启动服务
+### 3. Start Service
 
 ```bash
-bun run dev    # 开发模式（热重载）
-bun start      # 生产模式
+bun run dev    # Development mode (hot reload)
+bun start      # Production mode
 ```
 
-### 4. 访问
+### 4. Access
 
-- 屏幕入口：`http://localhost:3000/static/index.html`
+- Screen Entry: `http://localhost:3000/static/index.html`
 - AI Agent API: `http://localhost:3000/api/*`
 
-## API 文档
+## API Documentation
 
-### 认证
+### Authentication
 
-所有 AI Agent API 需要在 Header 中携带：
+All AI Agent APIs require the following Header:
 ```
 Authorization: Bearer {AI_TOKEN}
 ```
 
-### 屏幕管理
+### Screen Management
 
-#### 查询所有屏幕
+#### List All Screens
 ```http
 GET /api/screens
 ```
 
-#### 确认注册屏幕
+#### Confirm Screen Registration
 ```http
 POST /api/screens/{screen_id}/confirm
 Content-Type: application/json
@@ -68,7 +68,7 @@ Content-Type: application/json
 }
 ```
 
-#### 编辑屏幕
+#### Edit Screen
 ```http
 PATCH /api/screens/{screen_id}
 Content-Type: application/json
@@ -79,19 +79,19 @@ Content-Type: application/json
 }
 ```
 
-#### 失效屏幕
+#### Deactivate Screen
 ```http
 POST /api/screens/{screen_id}/deactivate
 ```
 
-#### 删除屏幕
+#### Delete Screen
 ```http
 DELETE /api/screens/{screen_id}
 ```
 
-### 投影
+### Projection
 
-#### 投影内容到屏幕
+#### Project Content to Screen
 ```http
 POST /api/screens/{screen_id}/project
 Content-Type: application/json
@@ -102,7 +102,7 @@ Content-Type: application/json
 }
 ```
 
-或 iframe 模式：
+Or iframe mode:
 ```http
 POST /api/screens/{screen_id}/project
 Content-Type: application/json
@@ -114,11 +114,11 @@ Content-Type: application/json
 }
 ```
 
-**内容中的 `$screen_token` 占位符会被替换为屏幕的实际 token。**
+**The `$screen_token` placeholder in content will be replaced with the screen's actual token.**
 
-### 附件
+### Attachments
 
-#### 上传附件
+#### Upload Attachment
 ```http
 POST /api/attachments
 Content-Type: multipart/form-data
@@ -126,7 +126,7 @@ Content-Type: multipart/form-data
 file: <binary>
 ```
 
-响应：
+Response:
 ```json
 {
   "attachment": {
@@ -137,26 +137,26 @@ file: <binary>
 }
 ```
 
-## 屏幕端流程
+## Screen-Side Flow
 
-1. 打开 `http://localhost:3000/static/index.html`
-2. 自动生成 screen_id，跳转到 display 页面等待注册
-3. AI Agent 查询到 pending 状态的屏幕，调用确认注册接口
-4. 屏幕收到注册成功消息，开始接收投影内容
+1. Open `http://localhost:3000/static/index.html`
+2. Automatically generate screen_id, redirect to display page and wait for registration
+3. AI Agent queries the pending screen and calls the confirm registration API
+4. Screen receives registration success message and starts receiving projection content
 
-## 目录结构
+## Directory Structure
 
 ```
 ai-screen/
 ├── src/
-│   ├── server.ts      # 主服务器
-│   ├── config.ts      # 配置
-│   └── database.ts    # SQLite 数据库操作
+│   ├── server.ts      # Main server
+│   ├── config.ts      # Configuration
+│   └── database.ts    # SQLite database operations
 ├── static/
-│   ├── index.html     # 屏幕入口（自动跳转/注册）
-│   └── display.html   # 屏幕显示页面
+│   ├── index.html     # Screen entry (auto redirect/register)
+│   └── display.html   # Screen display page
 ├── skill/
-│   └── ai-screen/     # Claude Skill 包
+│   └── ai-screen/     # Claude Skill package
 │       ├── SKILL.md
 │       ├── scripts/
 │       │   ├── list_screens.sh
@@ -165,43 +165,47 @@ ai-screen/
 │       │   └── upload_and_project.sh
 │       └── references/
 │           └── api.md
-├── attachments/       # 附件存储目录（自动创建）
-├── data/              # 数据库目录（自动创建）
+├── attachments/       # Attachment storage directory (auto-created)
+├── data/              # Database directory (auto-created)
 └── package.json
 ```
 
-## AI Agent 使用
+## AI Agent Usage
 
-本项目包含 `skill/ai-screen/` 目录，是 Claude 的 Skill 包，AI Agent 可通过加载此 Skill 来操作屏幕。
+This project includes the `skill/ai-screen/` directory, which is a Claude Skill package. AI Agents can operate screens by loading this Skill.
 
-### Skill 使用方式
+### Skill Usage
 
-1. 设置环境变量：
+1. Set environment variables:
 ```bash
 export AI_SCREEN_URL="http://localhost:3000"
 export AI_SCREEN_TOKEN="your-ai-token"
 ```
 
-2. Skill 脚本工具：
+2. Skill script tools:
 ```bash
-# 列出所有屏幕
+# List all screens
 ./skill/ai-screen/scripts/list_screens.sh
 
-# 确认注册新屏幕
+# Confirm and register new screen
 ./skill/ai-screen/scripts/confirm_screen.sh <screen_id> <name_en> <name_zh>
 
-# 投影 HTML 文件
+# Project HTML file
 ./skill/ai-screen/scripts/project_html.sh <screen_id> <file.html>
 
-# 上传并投影文件
+# Upload and project file
 ./skill/ai-screen/scripts/upload_and_project.sh <screen_id> <file.pdf>
 ```
 
-详细 API 参考见 `skill/ai-screen/references/api.md`
+For detailed API reference, see `skill/ai-screen/references/api.md`
 
-## 技术栈
+## Tech Stack
 
-- [Bun](https://bun.sh/) - 运行时
-- [Hono](https://hono.dev/) - Web 框架
-- Bun SQLite - 数据存储
-- WebSocket - 实时通信
+- [Bun](https://bun.sh/) - Runtime
+- [Hono](https://hono.dev/) - Web framework
+- Bun SQLite - Data storage
+- WebSocket - Real-time communication
+
+---
+
+[中文文档](README_zh.md)
