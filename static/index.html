@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Screen - 屏幕初始化</title>
+  <title>AI Screen - Display</title>
   <style>
     * {
       margin: 0;
@@ -11,130 +11,689 @@
       box-sizing: border-box;
     }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0a0a0a;
+    }
+
+    #display {
+      width: 100%;
+      height: 100%;
+    }
+
+    #display.inline-html {
+      padding: 0;
+    }
+
+    #display iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* 状态面板 */
+    #status-panel {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+      z-index: 10000;
+      transition: opacity 0.3s;
+    }
+
+    #status-panel.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #status-panel:hover {
+      opacity: 1 !important;
+    }
+
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff6b6b;
+      transition: background 0.3s;
+    }
+
+    .status-dot.connected {
+      background: #64ffda;
+    }
+
+    .status-dot.pending {
+      background: #ffd93d;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .screen-info {
+      font-size: 12px;
+      color: #8892b0;
+      line-height: 1.6;
+    }
+
+    .screen-id {
+      font-family: 'Courier New', monospace;
+      color: #64ffda;
+    }
+
+    /* 等待注册界面 */
+    #pending-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+
+    #pending-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .pending-content {
+      text-align: center;
       color: #fff;
     }
 
-    .container {
-      text-align: center;
-      padding: 40px;
-    }
-
-    .logo {
-      font-size: 48px;
-      margin-bottom: 10px;
-    }
-
-    h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
-      font-weight: 300;
-    }
-
-    .subtitle {
-      color: #8892b0;
-      margin-bottom: 40px;
-    }
-
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 16px 32px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .spinner {
-      width: 20px;
-      height: 20px;
-      border: 2px solid rgba(255, 255, 255, 0.1);
+    .pending-spinner {
+      width: 60px;
+      height: 60px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
       border-top-color: #64ffda;
       border-radius: 50%;
       animation: spin 1s linear infinite;
+      margin: 0 auto 24px;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
-    .status-text {
-      color: #ccd6f6;
+    .pending-title {
+      font-size: 24px;
+      margin-bottom: 12px;
+      font-weight: 300;
     }
 
-    .screen-id {
+    .pending-text {
+      color: #8892b0;
+      margin-bottom: 24px;
+    }
+
+    .pending-id {
       font-family: 'Courier New', monospace;
       background: rgba(100, 255, 218, 0.1);
       color: #64ffda;
-      padding: 2px 8px;
-      border-radius: 4px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 18px;
+      letter-spacing: 1px;
+    }
+
+    /* 投影内容样式 */
+    .content-wrapper {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+    }
+
+    /* 等待投屏界面 */
+    #waiting-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    #waiting-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .waiting-content {
+      text-align: center;
+      color: #fff;
+      padding: 40px;
+    }
+
+    .waiting-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 32px;
+      position: relative;
+    }
+
+    .waiting-icon::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      background: rgba(100, 255, 218, 0.1);
+      border-radius: 50%;
+      animation: pulse-ring 2s ease-out infinite;
+    }
+
+    .waiting-icon::after {
+      content: '📺';
+      font-size: 40px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0;
+      }
+    }
+
+    .waiting-title {
+      font-size: 32px;
+      font-weight: 300;
+      margin-bottom: 16px;
+      letter-spacing: 2px;
+    }
+
+    .waiting-screen-name {
+      font-size: 48px;
+      font-weight: 600;
+      color: #64ffda;
+      margin-bottom: 24px;
+      text-shadow: 0 0 30px rgba(100, 255, 218, 0.3);
+    }
+
+    .waiting-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: rgba(100, 255, 218, 0.05);
+      border: 1px solid rgba(100, 255, 218, 0.2);
+      border-radius: 24px;
+      color: #8892b0;
       font-size: 14px;
     }
 
-    .error {
-      color: #ff6b6b;
-      margin-top: 20px;
+    .waiting-status-dot {
+      width: 6px;
+      height: 6px;
+      background: #64ffda;
+      border-radius: 50%;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .waiting-hint {
+      margin-top: 48px;
+      color: #555;
+      font-size: 13px;
+    }
+
+    .waiting-id {
+      font-family: 'Courier New', monospace;
+      color: #444;
+      font-size: 11px;
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">🖥️</div>
-    <h1>AI Screen</h1>
-    <p class="subtitle">智能屏幕中继服务</p>
-    <div class="status">
-      <div class="spinner"></div>
-      <span class="status-text" id="status">正在初始化...</span>
+  <!-- 等待注册覆盖层 -->
+  <div id="pending-overlay">
+    <div class="pending-content">
+      <div class="pending-spinner"></div>
+      <h2 class="pending-title">等待注册确认</h2>
+      <p class="pending-text">请在 AI Agent 中确认此屏幕的注册</p>
+      <div class="pending-id" id="pending-id">-</div>
     </div>
-    <div id="error" class="error"></div>
   </div>
+
+  <!-- 状态面板 -->
+  <div id="status-panel">
+    <div class="status-header">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">未连接</span>
+    </div>
+    <div class="screen-info">
+      <div>ID: <span class="screen-id" id="screen-id">-</span></div>
+      <div id="screen-name">-</div>
+    </div>
+  </div>
+
+  <!-- 等待投屏覆盖层 -->
+  <div id="waiting-overlay">
+    <div class="waiting-content">
+      <div class="waiting-icon"></div>
+      <h2 class="waiting-title">AI SCREEN</h2>
+      <div class="waiting-screen-name" id="waiting-screen-name">-</div>
+      <div class="waiting-status">
+        <div class="waiting-status-dot"></div>
+        <span>等待 AI Agent 投屏</span>
+      </div>
+      <div class="waiting-hint">已就绪，请在 AI Agent 中发送投影内容</div>
+      <div class="waiting-id" id="waiting-id"></div>
+    </div>
+  </div>
+
+  <!-- 显示区域 -->
+  <div id="display"></div>
 
   <script>
     const STORAGE_KEY = 'ai_screen_token';
+    const LAST_CONTENT_KEY = 'ai_screen_last_content';
+    const WS_HEARTBEAT_INTERVAL = 30000;
 
+    let ws = null;
+    let heartbeatTimer = null;
+    let reconnectTimer = null;
+    let screenToken = null;
+    let screenId = null;
+    let isPending = false;
+
+    // 获取屏幕 token
+    function getScreenToken() {
+      return localStorage.getItem(STORAGE_KEY);
+    }
+
+    // 保存屏幕 token
+    function saveScreenToken(token) {
+      localStorage.setItem(STORAGE_KEY, token);
+      screenToken = token;
+    }
+
+    // 替换内容中的 $screen_token 占位符
+    function replaceScreenToken(content, token) {
+      if (typeof content === 'string') {
+        return content.replace(/\$screen_token/g, token);
+      }
+      return content;
+    }
+
+    // 检查是否有保存的内容
+    function hasSavedContent() {
+      return !!localStorage.getItem(LAST_CONTENT_KEY);
+    }
+
+    // 连接 WebSocket
+    function connectWebSocket() {
+      const token = getScreenToken();
+      let wsUrl;
+
+      if (token) {
+        wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=${token}`;
+      } else if (isPending && screenId) {
+        wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=pending&screen_id=${screenId}`;
+      } else {
+        console.error('No token or screen_id available');
+        return;
+      }
+
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        startHeartbeat();
+        updateStatus('connected');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          handleMessage(message);
+        } catch (err) {
+          console.error('Invalid message:', event.data);
+        }
+      };
+
+      ws.onclose = (event) => {
+        console.log('WebSocket closed:', event.code, event.reason);
+        stopHeartbeat();
+        updateStatus('disconnected');
+
+        // 如果是因为 token 无效被关闭，清除 token 并重试
+        if (event.code === 1008) {
+          if (event.reason === 'Screen not active') {
+            // 屏幕未激活，继续等待（可能是 pending 状态）
+            if (isPending) {
+              reconnectWithDelay();
+            } else {
+              // 屏幕被失效了
+              localStorage.removeItem(STORAGE_KEY);
+              alert('此屏幕已被失效，请重新访问首页注册');
+              window.location.href = '/';
+            }
+          } else if (event.reason === 'Invalid token') {
+            localStorage.removeItem(STORAGE_KEY);
+            reconnectWithDelay();
+          }
+        } else {
+          // 其他原因断开，自动重连
+          reconnectWithDelay();
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        updateStatus('error');
+      };
+    }
+
+    // 处理消息
+    function handleMessage(message) {
+      switch (message.type) {
+        case 'connected':
+          // 连接成功，保存 token（如果是新注册）
+          if (message.data.token) {
+            saveScreenToken(message.data.token);
+          }
+          screenId = message.data.screen_id;
+          updateScreenInfo(message.data);
+          // 如果不是 pending 状态且没有保存的内容，显示等待投屏界面
+          if (message.data.status !== 'pending' && !hasSavedContent()) {
+            showWaitingOverlay(message.data);
+          }
+          break;
+
+        case 'registered':
+          // 注册成功
+          isPending = false;
+          hidePendingOverlay();
+          if (message.data.token) {
+            saveScreenToken(message.data.token);
+          }
+          updateStatus('connected');
+          // 如果没有保存的内容，显示等待投屏界面
+          if (!hasSavedContent()) {
+            showWaitingOverlay(message.data);
+          }
+          break;
+
+        case 'project':
+          // 投影内容
+          handleProject(message.data);
+          break;
+
+        case 'pong':
+          // 心跳响应
+          break;
+      }
+    }
+
+    // 处理投影
+    function handleProject(data) {
+      // 隐藏等待界面
+      hideWaitingOverlay();
+
+      const display = document.getElementById('display');
+      const token = getScreenToken();
+
+      // 清空显示区域
+      display.innerHTML = '';
+      display.className = '';
+
+      // 保存到 localStorage
+      localStorage.setItem(LAST_CONTENT_KEY, JSON.stringify({
+        project_type: data.project_type,
+        content: data.content || '',
+        attachment_url: data.attachment_url || null
+      }));
+
+      if (data.project_type === 'inline_html') {
+        // 内联 HTML
+        display.className = 'inline-html';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'content-wrapper';
+
+        // 替换 $screen_token 占位符
+        const content = replaceScreenToken(data.content, token);
+        wrapper.innerHTML = content;
+
+        display.appendChild(wrapper);
+
+      } else if (data.project_type === 'iframe') {
+        // iframe
+        const iframe = document.createElement('iframe');
+
+        // 如果有 attachment_url，使用它；否则使用 content
+        let src = data.attachment_url || data.content;
+
+        // 替换 $screen_token 占位符
+        src = replaceScreenToken(src, token);
+
+        iframe.src = src;
+        iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
+        display.appendChild(iframe);
+      }
+    }
+
+    // 恢复上次投影内容
+    function restoreLastContent() {
+      try {
+        const saved = localStorage.getItem(LAST_CONTENT_KEY);
+        if (!saved) return false;
+
+        const data = JSON.parse(saved);
+        const display = document.getElementById('display');
+        const token = getScreenToken();
+
+        // 清空显示区域
+        display.innerHTML = '';
+        display.className = '';
+
+        // 隐藏等待界面
+        hideWaitingOverlay();
+
+        if (data.project_type === 'inline_html') {
+          display.className = 'inline-html';
+          const wrapper = document.createElement('div');
+          wrapper.className = 'content-wrapper';
+          const content = replaceScreenToken(data.content, token);
+          wrapper.innerHTML = content;
+          display.appendChild(wrapper);
+        } else if (data.project_type === 'iframe') {
+          const iframe = document.createElement('iframe');
+          let src = data.attachment_url || data.content;
+          src = replaceScreenToken(src, token);
+          iframe.src = src;
+          iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
+          display.appendChild(iframe);
+        }
+
+        return true;
+      } catch (err) {
+        console.error('Failed to restore last content:', err);
+        return false;
+      }
+    }
+
+    // 心跳
+    function startHeartbeat() {
+      heartbeatTimer = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+        }
+      }, WS_HEARTBEAT_INTERVAL);
+    }
+
+    function stopHeartbeat() {
+      if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = null;
+      }
+    }
+
+    // 重连
+    function reconnectWithDelay() {
+      if (reconnectTimer) return;
+
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        connectWebSocket();
+      }, 3000);
+    }
+
+    // 更新状态显示
+    function updateStatus(status) {
+      const dot = document.getElementById('status-dot');
+      const text = document.getElementById('status-text');
+
+      dot.className = 'status-dot';
+
+      switch (status) {
+        case 'connected':
+          dot.classList.add('connected');
+          text.textContent = '已连接';
+          break;
+        case 'pending':
+          dot.classList.add('pending');
+          text.textContent = '等待注册';
+          break;
+        case 'error':
+          dot.style.background = '#ff6b6b';
+          text.textContent = '连接错误';
+          break;
+        default:
+          dot.style.background = '#ff6b6b';
+          text.textContent = '未连接';
+      }
+    }
+
+    // 更新屏幕信息
+    function updateScreenInfo(data) {
+      document.getElementById('screen-id').textContent = data.screen_id || data.id || '-';
+
+      const nameEl = document.getElementById('screen-name');
+      if (data.name_zh && data.name_en) {
+        nameEl.textContent = `${data.name_zh} (${data.name_en})`;
+      } else if (data.name_zh) {
+        nameEl.textContent = data.name_zh;
+      } else if (data.name_en) {
+        nameEl.textContent = data.name_en;
+      } else {
+        nameEl.textContent = '未命名屏幕';
+      }
+    }
+
+    // 隐藏等待覆盖层
+    function hidePendingOverlay() {
+      document.getElementById('pending-overlay').classList.add('hidden');
+    }
+
+    // 显示等待投屏界面
+    function showWaitingOverlay(data) {
+      const nameEl = document.getElementById('waiting-screen-name');
+      const idEl = document.getElementById('waiting-id');
+
+      // 设置屏幕名称
+      if (data.name_zh && data.name_en) {
+        nameEl.textContent = data.name_zh;
+      } else if (data.name_zh) {
+        nameEl.textContent = data.name_zh;
+      } else if (data.name_en) {
+        nameEl.textContent = data.name_en;
+      } else {
+        nameEl.textContent = '未命名屏幕';
+      }
+
+      // 设置屏幕 ID
+      idEl.textContent = data.screen_id || data.id || '-';
+
+      // 显示等待界面
+      document.getElementById('waiting-overlay').classList.remove('hidden');
+    }
+
+    // 隐藏等待投屏界面
+    function hideWaitingOverlay() {
+      document.getElementById('waiting-overlay').classList.add('hidden');
+    }
+
+    // 生成屏幕 ID
     function generateScreenId() {
       return 'screen_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
     }
 
-    async function init() {
-      // 1. 检查是否已有注册 token，有直接跳转 display
-      const existingToken = localStorage.getItem(STORAGE_KEY);
+    // 初始化
+    function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      screenToken = getScreenToken();
 
-      if (existingToken) {
-        window.location.href = `/display.html`;
-        return;
+      // 场景1: 有 token，直接连接
+      if (screenToken) {
+        isPending = false;
+        hidePendingOverlay();
+        // 尝试恢复上次投影内容
+        restoreLastContent();
+        connectWebSocket();
+      } else if (urlParams.get('pending') === 'true') {
+        // 场景2: URL 有 pending 参数（保留兼容）
+        isPending = true;
+        screenId = sessionStorage.getItem('pending_screen_id') || generateScreenId();
+        document.getElementById('pending-id').textContent = screenId;
+        updateStatus('pending');
+        connectWebSocket();
+      } else {
+        // 场景3: 全新屏幕，自动生成 ID 进入 pending 模式
+        isPending = true;
+        screenId = generateScreenId();
+        document.getElementById('pending-id').textContent = screenId;
+        updateStatus('pending');
+        connectWebSocket();
       }
 
-      // 2. 没有 token，生成 screen_id 并跳转到 pending 模式
-      registerNewScreen();
-    }
-
-    async function registerNewScreen() {
-      const statusEl = document.getElementById('status');
-      const errorEl = document.getElementById('error');
-
-      const screenId = generateScreenId();
-
-      statusEl.innerHTML = `屏幕 ID: <span class="screen-id">${screenId}</span><br>等待 AI Agent 确认注册...`;
-
-      // 生成临时 token（仅用于 WebSocket 连接等待注册）
-      // 实际上服务端会在第一次连接时创建 pending 状态的屏幕记录
-      // 这里我们直接跳转到 display 页面，让它处理 WebSocket 连接
-
-      // 保存 screen_id 到 sessionStorage，供 display 页面使用
-      sessionStorage.setItem('pending_screen_id', screenId);
-
-      // 延迟跳转，让用户看到 ID
+      // 3秒后自动隐藏状态面板
       setTimeout(() => {
-        window.location.href = `/display.html?pending=true`;
-      }, 1500);
+        document.getElementById('status-panel').classList.add('hidden');
+      }, 3000);
     }
 
     // 启动

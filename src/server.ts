@@ -14,11 +14,8 @@ app.use('*', cors({ origin: '*', credentials: true }));
 
 // 注意：附件通过 /attachments/:id 路由动态处理（带token验证），不使用静态文件服务
 
-// 根路径 -> index.html
+// 所有页面路由都返回 index.html（单页面应用）
 app.get('/', serveStatic({ path: './static/index.html' }));
-
-// display.html
-app.get('/display.html', serveStatic({ path: './static/display.html' }));
 
 // ========== AI Agent API 中间件 ==========
 const aiAuthMiddleware = async (c: any, next: any) => {
