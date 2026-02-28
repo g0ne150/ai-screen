@@ -330,6 +330,7 @@
 
   <script>
     const STORAGE_KEY = 'ai_screen_token';
+    const LAST_CONTENT_KEY = 'ai_screen_last_content';
     const WS_HEARTBEAT_INTERVAL = 30000;
 
     let ws = null;
@@ -356,6 +357,11 @@
         return content.replace(/\$screen_token/g, token);
       }
       return content;
+    }
+
+    // 检查是否有保存的内容
+    function hasSavedContent() {
+      return !!localStorage.getItem(LAST_CONTENT_KEY);
     }
 
     // 连接 WebSocket
@@ -432,8 +438,8 @@
           }
           screenId = message.data.screen_id;
           updateScreenInfo(message.data);
-          // 如果不是 pending 状态，显示等待投屏界面
-          if (message.data.status !== 'pending') {
+          // 如果不是 pending 状态且没有保存的内容，显示等待投屏界面
+          if (message.data.status !== 'pending' && !hasSavedContent()) {
             showWaitingOverlay(message.data);
           }
           break;
@@ -446,8 +452,10 @@
             saveScreenToken(message.data.token);
           }
           updateStatus('connected');
-          // 显示等待投屏界面
-          showWaitingOverlay(message.data);
+          // 如果没有保存的内容，显示等待投屏界面
+          if (!hasSavedContent()) {
+            showWaitingOverlay(message.data);
+          }
           break;
 
         case 'project':
@@ -472,6 +480,13 @@
       // 清空显示区域
       display.innerHTML = '';
       display.className = '';
+
+      // 保存到 localStorage
+      localStorage.setItem(LAST_CONTENT_KEY, JSON.stringify({
+        project_type: data.project_type,
+        content: data.content || '',
+        attachment_url: data.attachment_url || null
+      }));
 
       if (data.project_type === 'inline_html') {
         // 内联 HTML
@@ -498,6 +513,46 @@
         iframe.src = src;
         iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
         display.appendChild(iframe);
+      }
+    }
+
+    // 恢复上次投影内容
+    function restoreLastContent() {
+      try {
+        const saved = localStorage.getItem(LAST_CONTENT_KEY);
+        if (!saved) return false;
+
+        const data = JSON.parse(saved);
+        const display = document.getElementById('display');
+        const token = getScreenToken();
+
+        // 清空显示区域
+        display.innerHTML = '';
+        display.className = '';
+
+        // 隐藏等待界面
+        hideWaitingOverlay();
+
+        if (data.project_type === 'inline_html') {
+          display.className = 'inline-html';
+          const wrapper = document.createElement('div');
+          wrapper.className = 'content-wrapper';
+          const content = replaceScreenToken(data.content, token);
+          wrapper.innerHTML = content;
+          display.appendChild(wrapper);
+        } else if (data.project_type === 'iframe') {
+          const iframe = document.createElement('iframe');
+          let src = data.attachment_url || data.content;
+          src = replaceScreenToken(src, token);
+          iframe.src = src;
+          iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
+          display.appendChild(iframe);
+        }
+
+        return true;
+      } catch (err) {
+        console.error('Failed to restore last content:', err);
+        return false;
       }
     }
 
@@ -611,6 +666,8 @@
       if (screenToken) {
         isPending = false;
         hidePendingOverlay();
+        // 尝试恢复上次投影内容
+        restoreLastContent();
         connectWebSocket();
       } else if (urlParams.get('pending') === 'true') {
         // 新屏幕注册模式（没有 token 且 URL 有 pending 参数）
