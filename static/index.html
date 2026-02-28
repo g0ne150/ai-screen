@@ -674,15 +674,8 @@
         // 尝试恢复上次投影内容
         restoreLastContent();
         connectWebSocket();
-      } else if (urlParams.get('pending') === 'true') {
-        // 场景2: URL 有 pending 参数（保留兼容）
-        isPending = true;
-        screenId = sessionStorage.getItem('pending_screen_id') || generateScreenId();
-        document.getElementById('pending-id').textContent = screenId;
-        updateStatus('pending');
-        connectWebSocket();
       } else {
-        // 场景3: 全新屏幕，自动生成 ID 进入 pending 模式
+        // 场景2: 全新屏幕，自动生成 ID 进入 pending 模式
         isPending = true;
         screenId = generateScreenId();
         document.getElementById('pending-id').textContent = screenId;
