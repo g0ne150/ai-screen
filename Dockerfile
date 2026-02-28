@@ -1,7 +1,7 @@
 # AI Screen Relay Server
 # https://github.com/oven-sh/bun
 
-FROM registry.zapan.club:10/oven/bun:1-alpine
+FROM oven/bun:1-alpine
 
 WORKDIR /app
 

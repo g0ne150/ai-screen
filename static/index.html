@@ -330,6 +330,7 @@
 
   <script>
     const STORAGE_KEY = 'ai_screen_token';
+    const STORAGE_SCREEN_ID_KEY = 'ai_screen_id';
     const LAST_CONTENT_KEY = 'ai_screen_last_content';
     const WS_HEARTBEAT_INTERVAL = 30000;
 
@@ -354,6 +355,7 @@
     // 清除所有屏幕相关的 localStorage
     function clearAllScreenData() {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_SCREEN_ID_KEY);
       localStorage.removeItem(LAST_CONTENT_KEY);
     }
 
@@ -681,9 +683,13 @@
         restoreLastContent();
         connectWebSocket();
       } else {
-        // 场景2: 全新屏幕，自动生成 ID 进入 pending 模式
+        // 场景2: 全新屏幕，尝试读取保存的 screen_id，没有则生成并保存
         isPending = true;
-        screenId = generateScreenId();
+        screenId = localStorage.getItem(STORAGE_SCREEN_ID_KEY);
+        if (!screenId) {
+          screenId = generateScreenId();
+          localStorage.setItem(STORAGE_SCREEN_ID_KEY, screenId);
+        }
         document.getElementById('pending-id').textContent = screenId;
         updateStatus('pending');
         connectWebSocket();
