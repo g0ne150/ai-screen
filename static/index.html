@@ -351,6 +351,12 @@
       screenToken = token;
     }
 
+    // 清除所有屏幕相关的 localStorage
+    function clearAllScreenData() {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LAST_CONTENT_KEY);
+    }
+
     // 替换内容中的 $screen_token 占位符
     function replaceScreenToken(content, token) {
       if (typeof content === 'string') {
@@ -408,12 +414,12 @@
               reconnectWithDelay();
             } else {
               // 屏幕被失效了
-              localStorage.removeItem(STORAGE_KEY);
+              clearAllScreenData();
               alert('此屏幕已被失效，请重新访问首页注册');
               window.location.href = '/';
             }
           } else if (event.reason === 'Invalid token') {
-            localStorage.removeItem(STORAGE_KEY);
+            clearAllScreenData();
             reconnectWithDelay();
           }
         } else {
