@@ -5,7 +5,7 @@ export interface Screen {
   id: string;
   name_en: string;
   name_zh: string;
-  token: string;
+  token: string | null;
   status: 'pending' | 'active' | 'inactive';
   created_at: number;
   updated_at: number;
@@ -51,7 +51,7 @@ class DatabaseManager {
         id TEXT PRIMARY KEY,
         name_en TEXT,
         name_zh TEXT,
-        token TEXT UNIQUE NOT NULL,
+        token TEXT UNIQUE,
         status TEXT DEFAULT 'pending',
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
@@ -73,19 +73,18 @@ class DatabaseManager {
 
   // 屏幕相关操作
   createScreen(id: string): Screen {
-    const token = this.generateToken();
     const now = Date.now();
 
     this.db.run(
       'INSERT INTO screens (id, name_en, name_zh, token, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, '', '', token, 'pending', now, now]
+      [id, '', '', null, 'pending', now, now]
     );
 
     return {
       id,
       name_en: '',
       name_zh: '',
-      token,
+      token: null,
       status: 'pending',
       created_at: now,
       updated_at: now,
@@ -107,8 +106,8 @@ class DatabaseManager {
   confirmScreen(id: string, nameEn: string, nameZh: string): Screen | null {
     const now = Date.now();
     const result = this.db.run(
-      'UPDATE screens SET name_en = ?, name_zh = ?, status = ?, updated_at = ? WHERE id = ?',
-      [nameEn, nameZh, 'active', now, id]
+      'UPDATE screens SET name_en = ?, name_zh = ?, token = ?, status = ?, updated_at = ? WHERE id = ?',
+      [nameEn, nameZh, this.generateToken(), 'active', now, id]
     );
 
     if (result.changes === 0) {
