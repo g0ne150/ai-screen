@@ -394,13 +394,11 @@
       return !!localStorage.getItem(LAST_CONTENT_KEY);
     }
 
-    // 获取屏幕尺寸
+    // 获取屏幕尺寸（视口大小，不是物理屏幕）
     function getScreenDimensions() {
       return {
-        width: window.screen.width,
-        height: window.screen.height,
-        availWidth: window.screen.availWidth,
-        availHeight: window.screen.availHeight
+        width: window.innerWidth,
+        height: window.innerHeight
       };
     }
 
