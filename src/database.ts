@@ -7,6 +7,8 @@ export interface Screen {
   name_zh: string;
   token: string | null;
   status: 'pending' | 'active' | 'inactive';
+  width: number | null;
+  height: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -53,6 +55,8 @@ class DatabaseManager {
         name_zh TEXT,
         token TEXT UNIQUE,
         status TEXT DEFAULT 'pending',
+        width INTEGER,
+        height INTEGER,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )
@@ -72,12 +76,12 @@ class DatabaseManager {
   }
 
   // 屏幕相关操作
-  createScreen(id: string): Screen {
+  createScreen(id: string, width?: number, height?: number): Screen {
     const now = Date.now();
 
     this.db.run(
-      'INSERT INTO screens (id, name_en, name_zh, token, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, '', '', null, 'pending', now, now]
+      'INSERT INTO screens (id, name_en, name_zh, token, status, width, height, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, '', '', null, 'pending', width ?? null, height ?? null, now, now]
     );
 
     return {
@@ -86,6 +90,8 @@ class DatabaseManager {
       name_zh: '',
       token: null,
       status: 'pending',
+      width: width ?? null,
+      height: height ?? null,
       created_at: now,
       updated_at: now,
     };
@@ -103,11 +109,11 @@ class DatabaseManager {
     return this.db.query('SELECT * FROM screens ORDER BY created_at DESC').all() as Screen[];
   }
 
-  confirmScreen(id: string, nameEn: string, nameZh: string): Screen | null {
+  confirmScreen(id: string, nameEn: string, nameZh: string, width?: number, height?: number): Screen | null {
     const now = Date.now();
     const result = this.db.run(
-      'UPDATE screens SET name_en = ?, name_zh = ?, token = ?, status = ?, updated_at = ? WHERE id = ?',
-      [nameEn, nameZh, this.generateToken(), 'active', now, id]
+      'UPDATE screens SET name_en = ?, name_zh = ?, token = ?, status = ?, width = COALESCE(?, width), height = COALESCE(?, height), updated_at = ? WHERE id = ?',
+      [nameEn, nameZh, this.generateToken(), 'active', width ?? null, height ?? null, now, id]
     );
 
     if (result.changes === 0) {
@@ -148,6 +154,19 @@ class DatabaseManager {
       [newToken, Date.now(), id]
     );
     return result.changes > 0 ? newToken : null;
+  }
+
+  updateScreenDimensions(id: string, width: number, height: number): Screen | null {
+    const result = this.db.run(
+      'UPDATE screens SET width = ?, height = ?, updated_at = ? WHERE id = ?',
+      [width, height, Date.now(), id]
+    );
+
+    if (result.changes === 0) {
+      return null;
+    }
+
+    return this.getScreen(id);
   }
 
   deleteScreen(id: string): boolean {

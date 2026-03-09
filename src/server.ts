@@ -40,13 +40,13 @@ app.get('/api/screens', aiAuthMiddleware, (c) => {
 // 2. 确认注册屏幕
 app.post('/api/screens/:id/confirm', aiAuthMiddleware, async (c) => {
   const id = c.req.param('id');
-  const { name_en, name_zh } = await c.req.json();
+  const { name_en, name_zh, width, height } = await c.req.json();
 
   if (!name_en || !name_zh) {
     return c.json({ error: 'name_en and name_zh are required' }, 400);
   }
 
-  const screen = db.confirmScreen(id, name_en, name_zh);
+  const screen = db.confirmScreen(id, name_en, name_zh, width, height);
   if (!screen) {
     return c.json({ error: 'Screen not found' }, 404);
   }
@@ -56,7 +56,7 @@ app.post('/api/screens/:id/confirm', aiAuthMiddleware, async (c) => {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       type: 'registered',
-      data: { name_en, name_zh, token: screen.token }
+      data: { name_en, name_zh, token: screen.token, width: screen.width, height: screen.height }
     }));
   }
 
@@ -66,11 +66,16 @@ app.post('/api/screens/:id/confirm', aiAuthMiddleware, async (c) => {
 // 3. 编辑屏幕
 app.patch('/api/screens/:id', aiAuthMiddleware, async (c) => {
   const id = c.req.param('id');
-  const { name_en, name_zh } = await c.req.json();
+  const { name_en, name_zh, width, height } = await c.req.json();
 
-  const screen = db.updateScreen(id, { name_en, name_zh });
+  let screen = db.updateScreen(id, { name_en, name_zh });
   if (!screen) {
     return c.json({ error: 'Screen not found' }, 404);
+  }
+
+  // 如果提供了尺寸信息，更新尺寸
+  if (width !== undefined && height !== undefined) {
+    screen = db.updateScreenDimensions(id, width, height) || screen;
   }
 
   return c.json({ screen });
@@ -251,11 +256,19 @@ const handleWebSocket = {
         screenId = 'screen_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
       }
 
+      // 从 URL 获取屏幕尺寸
+      const width = parseInt(url.searchParams.get('w') || '0', 10) || null;
+      const height = parseInt(url.searchParams.get('h') || '0', 10) || null;
+
       // 检查屏幕是否已存在
       let screen = db.getScreen(screenId);
       if (!screen) {
-        // 创建新的 pending 屏幕
-        screen = db.createScreen(screenId);
+        // 创建新的 pending 屏幕，带上尺寸信息
+        screen = db.createScreen(screenId, width || undefined, height || undefined);
+      } else if (width && height) {
+        // 更新现有屏幕的尺寸
+        db.updateScreenDimensions(screenId, width, height);
+        screen = db.getScreen(screenId);
       }
 
       // 关闭已存在的同屏幕连接（防止重复连接）
@@ -275,15 +288,17 @@ const handleWebSocket = {
         data: {
           screen_id: screen.id,
           status: 'pending',
+          width: screen?.width,
+          height: screen?.height,
           message: 'Waiting for AI agent confirmation',
         },
       }));
 
-      console.log(`Screen ${screen.id} connected (pending registration)`);
+      console.log(`Screen ${screen.id} connected (pending registration), size: ${screen?.width}x${screen?.height}`);
       return;
     }
 
-    const screen = db.getScreenByToken(token);
+    let screen = db.getScreenByToken(token);
     if (!screen) {
       ws.close(1008, 'Invalid token');
       return;
@@ -300,6 +315,14 @@ const handleWebSocket = {
       existingWs.close(1008, 'New connection established');
     }
 
+    // 从 URL 获取屏幕尺寸（用于更新已有屏幕的尺寸）
+    const width = parseInt(url.searchParams.get('w') || '0', 10) || null;
+    const height = parseInt(url.searchParams.get('h') || '0', 10) || null;
+    if (width && height) {
+      db.updateScreenDimensions(screen.id, width, height);
+      screen = db.getScreen(screen.id)!;
+    }
+
     // 存储连接
     (ws as any).screenId = screen.id;
     wsConnections.set(screen.id, ws);
@@ -311,10 +334,12 @@ const handleWebSocket = {
         screen_id: screen.id,
         name_en: screen.name_en,
         name_zh: screen.name_zh,
+        width: screen.width,
+        height: screen.height,
       },
     }));
 
-    console.log(`Screen ${screen.id} connected`);
+    console.log(`Screen ${screen.id} connected, size: ${screen.width}x${screen.height}`);
   },
 
   close(ws: WebSocket) {

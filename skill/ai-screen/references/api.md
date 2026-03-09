@@ -20,12 +20,17 @@
       "name_en": "Living Room",
       "name_zh": "客厅",
       "status": "active",
+      "width": 1920,
+      "height": 1080,
       "created_at": 1234567890,
       "updated_at": 1234567890
     }
   ]
 }
 ```
+
+**字段说明：**
+- `width`, `height`: 屏幕物理尺寸（像素），屏幕连接时自动上报
 
 ### POST /api/screens/:id/confirm
 
@@ -35,9 +40,15 @@
 ```json
 {
   "name_en": "Screen Name",
-  "name_zh": "屏幕名称"
+  "name_zh": "屏幕名称",
+  "width": 1920,
+  "height": 1080
 }
 ```
+
+**字段说明：**
+- `name_en`, `name_zh`: 必填，屏幕名称
+- `width`, `height`: 可选，覆盖屏幕自动上报的尺寸
 
 **响应：**
 ```json
@@ -54,15 +65,21 @@
 
 ### PATCH /api/screens/:id
 
-编辑屏幕信息（仅 name_en 和 name_zh）。
+编辑屏幕信息。
 
 **请求体：**
 ```json
 {
   "name_en": "New Name",
-  "name_zh": "新名称"
+  "name_zh": "新名称",
+  "width": 1920,
+  "height": 1080
 }
 ```
+
+**字段说明：**
+- `name_en`, `name_zh`: 可选，屏幕名称
+- `width`, `height`: 可选，手动设置屏幕尺寸
 
 ### POST /api/screens/:id/deactivate
 
@@ -127,18 +144,37 @@
 
 屏幕端通过 WebSocket 连接实时接收投影内容。
 
-**连接地址：** `ws://host/ws?token={screen_token}`
+**连接地址：** `ws://host/ws?token={screen_token}&w={width}&h={height}`
+
+**连接参数：**
+- `token`: 屏幕 token 或 `pending`（新屏幕注册）
+- `screen_id`: 新屏幕注册时提供
+- `w`, `h`: 屏幕宽度和高度（像素），屏幕连接时自动上报
 
 **消息格式：**
 
 ```json
-// 投影消息
+// 连接成功消息（pending 状态）
 {
-  "type": "project",
+  "type": "connected",
   "data": {
-    "project_type": "inline_html|iframe",
-    "content": "...",
-    "attachment_url": "..."
+    "screen_id": "screen_xxx",
+    "status": "pending",
+    "width": 1920,
+    "height": 1080,
+    "message": "Waiting for AI agent confirmation"
+  }
+}
+
+// 连接成功消息（active 状态）
+{
+  "type": "connected",
+  "data": {
+    "screen_id": "screen_xxx",
+    "name_en": "Living Room",
+    "name_zh": "客厅",
+    "width": 1920,
+    "height": 1080
   }
 }
 
@@ -147,7 +183,20 @@
   "type": "registered",
   "data": {
     "name_en": "...",
-    "name_zh": "..."
+    "name_zh": "...",
+    "token": "screen_token",
+    "width": 1920,
+    "height": 1080
+  }
+}
+
+// 投影消息
+{
+  "type": "project",
+  "data": {
+    "project_type": "inline_html|iframe",
+    "content": "...",
+    "attachment_url": "..."
   }
 }
 ```

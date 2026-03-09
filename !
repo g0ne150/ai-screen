@@ -1,0 +1,11 @@
+323 |       screen = db.getScreen(screen.id)!;
+            ^
+error: This assignment will throw because "screen" is a constant
+    at /home/zapan/myspace/ai/ai-screen/src/server.ts:323:7
+
+301 |     const screen = db.getScreenByToken(token);
+                ^
+note: The symbol "screen" was declared a constant here:
+   at /home/zapan/myspace/ai/ai-screen/src/server.ts:301:11
+
+Bun v1.3.10 (Linux x64)

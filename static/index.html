@@ -165,6 +165,28 @@
       width: 100%;
       height: 100%;
       background: #fff;
+      overflow: hidden;
+    }
+
+    /* 投影内容容器 - 禁止用户交互 */
+    #display {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      pointer-events: none; /* 禁止所有鼠标交互 */
+      user-select: none;    /* 禁止文本选择 */
+    }
+
+    #display.inline-html {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    #display iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      overflow: hidden;
     }
 
     /* 等待投屏界面 */
@@ -372,15 +394,26 @@
       return !!localStorage.getItem(LAST_CONTENT_KEY);
     }
 
+    // 获取屏幕尺寸
+    function getScreenDimensions() {
+      return {
+        width: window.screen.width,
+        height: window.screen.height,
+        availWidth: window.screen.availWidth,
+        availHeight: window.screen.availHeight
+      };
+    }
+
     // 连接 WebSocket
     function connectWebSocket() {
       const token = getScreenToken();
+      const dims = getScreenDimensions();
       let wsUrl;
 
       if (token) {
-        wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=${token}`;
+        wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=${token}&w=${dims.width}&h=${dims.height}`;
       } else if (isPending && screenId) {
-        wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=pending&screen_id=${screenId}`;
+        wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws?token=pending&screen_id=${screenId}&w=${dims.width}&h=${dims.height}`;
       } else {
         console.error('No token or screen_id available');
         return;
