@@ -35,3 +35,16 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 /data/ai-screen.db
 /static/attachments
+
+# Android
+.gradle/
+local.properties
+*.keystore
+keystore.properties
+android/build/
+android/app/build/
+android/.project
+android/.settings/
+android/app/.project
+android/app/.settings/
+android/app/.classpath
