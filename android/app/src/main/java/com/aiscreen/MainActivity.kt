@@ -49,6 +49,16 @@ class MainActivity : AppCompatActivity() {
 
         setupWebView()
 
+        loadOrConfigure()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        this.intent = intent
+        loadOrConfigure()
+    }
+
+    private fun loadOrConfigure() {
         val url = resolveUrl()
         if (url == null) {
             startSettingsActivity()
