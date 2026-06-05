@@ -1,0 +1,177 @@
+### ============================================================
+### ai-screen API 测试文件
+### 使用 VS Code REST Client 或 IntelliJ HTTP Client 运行
+### ============================================================
+
+### 环境变量
+@baseUrl = http://localhost:3000
+@aiToken = your-ai-token-here-change-in-production
+@screenId = screen_mogi28di_dkfyj6sls
+
+### ============================================================
+### 基础
+### ============================================================
+
+### GET 首页 (SPA入口)
+GET {{baseUrl}}/
+
+### ============================================================
+### AI Agent API — 查询屏幕
+### ============================================================
+
+### 查询所有屏幕
+GET {{baseUrl}}/api/screens
+Authorization: Bearer {{aiToken}}
+
+### ============================================================
+### AI Agent API — 注册/确认屏幕
+### ============================================================
+
+### 确认注册 pending 屏幕
+POST {{baseUrl}}/api/screens/{{screenId}}/confirm
+Authorization: Bearer {{aiToken}}
+Content-Type: application/json
+
+{
+  "name_en": "Living Room TV",
+  "name_zh": "客厅电视",
+  "width": 1920,
+  "height": 1080
+}
+
+### ============================================================
+### AI Agent API — 编辑屏幕
+### ============================================================
+
+### 编辑屏幕名称
+PATCH {{baseUrl}}/api/screens/{{screenId}}
+Authorization: Bearer {{aiToken}}
+Content-Type: application/json
+
+{
+  "name_en": "Living Room TV Updated",
+  "name_zh": "客厅电视(已更新)",
+  "width": 3840,
+  "height": 2160
+}
+
+### 只编辑部分字段（不传尺寸）
+PATCH {{baseUrl}}/api/screens/{{screenId}}
+Authorization: Bearer {{aiToken}}
+Content-Type: application/json
+
+{
+  "name_en": "Living Room TV V2"
+}
+
+### ============================================================
+### AI Agent API — 投影
+### ============================================================
+
+### 投影 inline_html
+POST {{baseUrl}}/api/screens/{{screenId}}/project
+Authorization: Bearer {{aiToken}}
+Content-Type: application/json
+
+{
+  "type": "inline_html",
+  "content": "<div style=\"text-align:center;padding:40px;color:white;background:#222;height:100vh;\"><h1>Hello from AI Agent</h1><p>Current time: <span id=\"t\"></span></p></div><script>setInterval(()=>document.getElementById('t').textContent=new Date().toLocaleTimeString(),1000)</script>"
+}
+
+### 投影 iframe
+POST {{baseUrl}}/api/screens/{{screenId}}/project
+Authorization: Bearer {{aiToken}}
+Content-Type: application/json
+
+{
+  "type": "iframe",
+  "content": "https://example.com"
+}
+
+### 投影 inline_html + 附件
+POST {{baseUrl}}/api/screens/{{screenId}}/project
+Authorization: Bearer {{aiToken}}
+Content-Type: application/json
+
+{
+  "type": "inline_html",
+  "content": "<div style=\"padding:40px;\"><h1>Image Preview</h1><img src=\"ATTACHMENT_PLACEHOLDER\" style=\"max-width:100%;\"/></div>",
+  "attachment_url": "/attachments/your-attachment-id?t=your-attachment-token"
+}
+
+### ============================================================
+### AI Agent API — 附件
+### ============================================================
+
+### 上传附件 (multipart)
+POST {{baseUrl}}/api/attachments
+Authorization: Bearer {{aiToken}}
+Content-Type: multipart/form-data; boundary=----FormBoundary
+
+------FormBoundary
+Content-Disposition: form-data; name="file"; filename="test.png"
+Content-Type: image/png
+
+< demo.html
+------FormBoundary--
+
+### 访问附件 (屏幕端，需要附件 token)
+GET {{baseUrl}}/attachments/your-attachment-id?t=your-attachment-token
+
+### ============================================================
+### AI Agent API — 失效/删除
+### ============================================================
+
+### 失效屏幕（断开 WebSocket）
+POST {{baseUrl}}/api/screens/{{screenId}}/deactivate
+Authorization: Bearer {{aiToken}}
+
+### 删除屏幕
+DELETE {{baseUrl}}/api/screens/{{screenId}}
+Authorization: Bearer {{aiToken}}
+
+### ============================================================
+### 错误场景
+### ============================================================
+
+### 缺少 Authorization
+GET {{baseUrl}}/api/screens
+
+### 错误的 Token
+GET {{baseUrl}}/api/screens
+Authorization: Bearer wrong-token
+
+### 确认不存在的屏幕（返回 404）
+POST {{baseUrl}}/api/screens/non-existent-screen/confirm
+Authorization: Bearer {{aiToken}}
+Content-Type: application/json
+
+{
+  "name_en": "Test",
+  "name_zh": "测试"
+}
+
+### 缺少必填字段 name_en
+POST {{baseUrl}}/api/screens/{{screenId}}/confirm
+Authorization: Bearer {{aiToken}}
+Content-Type: application/json
+
+{
+  "name_zh": "只有中文名"
+}
+
+### 无效投影类型
+POST {{baseUrl}}/api/screens/{{screenId}}/project
+Authorization: Bearer {{aiToken}}
+Content-Type: application/json
+
+{
+  "type": "invalid_type",
+  "content": "test"
+}
+
+### ============================================================
+### WebSocket 连接 (不能用 REST Client 测试，用 wscat 代替)
+### ============================================================
+### 新屏幕注册: wscat -c "ws://localhost:3000/ws?token=pending&screen_id=screen_xxx&w=1920&h=1080"
+### 已注册屏幕: wscat -c "ws://localhost:3000/ws?token=<screen_token>&w=1920&h=1080"

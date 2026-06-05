@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .clock {
+      font-size: 15vw;
+      font-weight: bold;
+      text-shadow: 0 0 20px #0f0;
+    }
+    .date {
+      font-size: 4vw;
+      margin-top: 2vh;
+      opacity: 0.8;
+    }
+    .location {
+      font-size: 3vw;
+      margin-top: 1vh;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="clock" id="clock">00:00:00</div>
+  <div class="date" id="date">----/--/--</div>
+  <div class="location">北京时间 (UTC+8)</div>
+  
+  <script>
+    function update() {
+      const now = new Date();
+      // 北京时间 UTC+8
+      const bjTime = new Date(now.getTime() + (now.getTimezoneOffset() + 480) * 60000);
+      
+      const h = String(bjTime.getHours()).padStart(2, '0');
+      const m = String(bjTime.getMinutes()).padStart(2, '0');
+      const s = String(bjTime.getSeconds()).padStart(2, '0');
+      
+      document.getElementById('clock').textContent = `${h}:${m}:${s}`;
+      document.getElementById('date').textContent = bjTime.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        weekday: 'long'
+      });
+    }
+    update();
+    setInterval(update, 1000);
+  </script>
+</body>
+</html>
