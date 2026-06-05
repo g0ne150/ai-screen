@@ -550,7 +550,7 @@
         src = replaceScreenToken(src, token);
 
         iframe.src = src;
-        iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
+        iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-autoplay';
         display.appendChild(iframe);
       }
     }
@@ -584,7 +584,7 @@
           let src = data.attachment_url || data.content;
           src = replaceScreenToken(src, token);
           iframe.src = src;
-          iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
+          iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-autoplay';
           display.appendChild(iframe);
         }
 
