@@ -19,7 +19,6 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 
@@ -27,8 +26,21 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val PREF_SERVER_URL = "server_url"
+        private const val PREF_USER_AGENT = "user_agent"
         private const val INTENT_EXTRA_URL = "server_url"
         private const val EXIT_TIMEOUT_MS = 2000L
+
+        data class UserAgentOption(val label: String, val ua: String)
+
+        val UA_OPTIONS = listOf(
+            UserAgentOption("桌面 Chrome (自动播放)", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"),
+            UserAgentOption("桌面 Chrome 兼容 (自动播放)", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36"),
+            UserAgentOption("Android 平板 (兼容)", "Mozilla/5.0 (Linux; Android 9; Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Safari/537.36"),
+            UserAgentOption("WebView 默认 (最安全)", ""),
+        )
+
+        // 默认 UA 索引 = 0 (桌面 Chrome 自动播放)
+        private const val DEFAULT_UA_INDEX = 0
     }
 
     private lateinit var webView: WebView
@@ -63,8 +75,15 @@ class MainActivity : AppCompatActivity() {
         if (url == null) {
             startSettingsActivity()
         } else {
+            applyUserAgent()
             webView.loadUrl(url)
         }
+    }
+
+    private fun applyUserAgent() {
+        val uaIndex = prefs.getInt(PREF_USER_AGENT, DEFAULT_UA_INDEX)
+        val customUa = UA_OPTIONS.getOrElse(uaIndex) { UA_OPTIONS[DEFAULT_UA_INDEX] }.ua
+        webView.settings.userAgentString = if (customUa.isNotEmpty()) customUa else null
     }
 
     private fun resolveUrl(): String? {
@@ -87,8 +106,6 @@ class MainActivity : AppCompatActivity() {
             useWideViewPort = true
             cacheMode = WebSettings.LOAD_NO_CACHE
             mediaPlaybackRequiresUserGesture = false
-            userAgentString = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             }
@@ -149,6 +166,7 @@ class MainActivity : AppCompatActivity() {
         prefs.getString(PREF_SERVER_URL, null)?.let {
             intent.putExtra("current_url", it)
         }
+        intent.putExtra("current_ua_index", prefs.getInt(PREF_USER_AGENT, DEFAULT_UA_INDEX))
         startActivity(intent)
     }
 
@@ -202,7 +220,7 @@ class MainActivity : AppCompatActivity() {
                     finishAffinity()
                 } else {
                     exitPressedOnce = true
-                    Toast.makeText(this, "Press again to exit", Toast.LENGTH_SHORT).show()
+                    startSettingsActivity()
                     webView.postDelayed({ exitPressedOnce = false }, EXIT_TIMEOUT_MS)
                 }
                 true
