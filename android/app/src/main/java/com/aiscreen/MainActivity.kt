@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
+import androidx.activity.OnBackPressedCallback
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
@@ -61,6 +62,18 @@ class MainActivity : AppCompatActivity() {
 
         setupWebView()
 
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (exitPressedOnce) {
+                    finishAffinity()
+                } else {
+                    exitPressedOnce = true
+                    startSettingsActivity()
+                    webView.postDelayed({ exitPressedOnce = false }, EXIT_TIMEOUT_MS)
+                }
+            }
+        })
+
         loadOrConfigure()
     }
 
@@ -76,6 +89,7 @@ class MainActivity : AppCompatActivity() {
             startSettingsActivity()
         } else {
             applyUserAgent()
+            webView.clearHistory()
             webView.loadUrl(url)
         }
     }
@@ -215,16 +229,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return when (keyCode) {
-            KeyEvent.KEYCODE_BACK -> {
-                if (exitPressedOnce) {
-                    finishAffinity()
-                } else {
-                    exitPressedOnce = true
-                    startSettingsActivity()
-                    webView.postDelayed({ exitPressedOnce = false }, EXIT_TIMEOUT_MS)
-                }
-                true
-            }
             KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_SETTINGS -> {
                 startSettingsActivity()
                 true
